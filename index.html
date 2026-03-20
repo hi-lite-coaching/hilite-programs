@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hi-Lite Coaching — Coach Portal</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --neon: #CAFF4C;
+      --neon-dim: rgba(202,255,76,0.10);
+      --neon-border: rgba(202,255,76,0.28);
+      --bg: #0a0a0a;
+      --bg-card: #111111;
+      --bg-surface: #191919;
+      --bg-hover: #1e1e1e;
+      --border: rgba(255,255,255,0.08);
+      --border-md: rgba(255,255,255,0.13);
+      --text-primary: #f0f0f0;
+      --text-secondary: #999;
+      --text-muted: #555;
+      --blue: #60a5fa;   --blue-dim: rgba(96,165,250,0.12);
+      --purple: #a78bfa; --purple-dim: rgba(167,139,250,0.12);
+      --amber: #fbbf24;  --amber-dim: rgba(251,191,36,0.12);
+      --coral: #f87171;  --coral-dim: rgba(248,113,113,0.12);
+      --teal: #34d399;   --teal-dim: rgba(52,211,153,0.12);
+      --gold: #facc15;   --gold-dim: rgba(250,204,21,0.12);
+      --radius-sm: 6px; --radius-md: 10px; --radius-lg: 14px;
+      --font: 'Space Grotesk', system-ui, sans-serif;
+    }
+    body { font-family: var(--font); background: var(--bg); color: var(--text-primary); min-height: 100vh; }
+
+    /* ── Nav ── */
+    .nav { display: flex; align-items: center; justify-content: space-between; padding: 0 2rem; border-bottom: 1px solid var(--border); background: var(--bg-card); position: sticky; top: 0; z-index: 50; flex-wrap: wrap; gap: 0; }
+    .nav-brand { display: flex; align-items: center; gap: 9px; padding: 1rem 0; }
+    .brand-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--neon); box-shadow: 0 0 8px var(--neon); flex-shrink: 0; }
+    .brand-name { font-size: 13px; font-weight: 600; color: var(--text-primary); letter-spacing: -0.01em; }
+    .nav-tabs { display: flex; gap: 0; }
+    .nav-tab { font-size: 13px; font-weight: 500; font-family: var(--font); padding: 1.1rem 1.4rem; background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--text-secondary); cursor: pointer; transition: all 0.15s; display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+    .nav-tab:hover { color: var(--text-primary); }
+    .nav-tab.active { color: var(--neon); border-bottom-color: var(--neon); }
+    .nav-tab .tab-icon { font-size: 14px; }
+
+    /* ── Shell ── */
+    .shell { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem 5rem; }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ── Page header ── */
+    .page-header { margin-bottom: 1.75rem; }
+    .page-title { font-size: 22px; font-weight: 600; color: var(--text-primary); letter-spacing: -0.02em; }
+    .page-sub { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+
+    /* ── Controls row ── */
+    .controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 1.5rem; }
+    .search-box { font-size: 13px; font-family: var(--font); padding: 8px 14px; border-radius: var(--radius-md); border: 1px solid var(--border); background: var(--bg-card); color: var(--text-primary); outline: none; width: 210px; transition: border-color 0.2s; }
+    .search-box::placeholder { color: var(--text-muted); }
+    .search-box:focus { border-color: var(--neon); }
+    .filter-btn { font-size: 12px; font-family: var(--font); padding: 6px 14px; border-radius: 999px; border: 1px solid var(--border); background: transparent; color: var(--text-secondary); cursor: pointer; transition: all 0.15s; }
+    .filter-btn:hover { border-color: var(--neon-border); color: var(--neon); }
+    .filter-btn.active { background: var(--neon); color: #0a0a0a; border-color: var(--neon); font-weight: 600; }
+    .refresh-btn { font-size: 12px; font-family: var(--font); padding: 7px 14px; border-radius: 999px; border: 1px solid var(--border); background: transparent; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; gap: 5px; transition: all 0.15s; margin-left: auto; }
+    .refresh-btn:hover { border-color: var(--neon-border); color: var(--neon); }
+    .refresh-icon { display: inline-block; transition: transform 0.5s ease; }
+    .refresh-btn.spinning .refresh-icon { transform: rotate(360deg); }
+
+    /* ── Type tabs ── */
+    .type-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 1.25rem; }
+    .type-tab { font-size: 12px; font-family: var(--font); padding: 5px 13px; border-radius: 999px; border: 1px solid var(--border); background: transparent; color: var(--text-secondary); cursor: pointer; transition: all 0.15s; }
+    .type-tab:hover { border-color: var(--border-md); color: var(--text-primary); }
+    .type-tab.active { background: var(--bg-surface); border-color: var(--border-md); color: var(--text-primary); font-weight: 500; }
+
+    /* ── Metrics ── */
+    .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; margin-bottom: 1.5rem; }
+    .metric { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 14px 16px; }
+    .metric-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px; }
+    .metric-value { font-size: 26px; font-weight: 600; color: var(--text-primary); }
+    .metric-value.neon { color: var(--neon); }
+    .metric-value.dim  { color: var(--text-muted); }
+
+    /* ── Status bar ── */
+    .status-bar { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); margin-bottom: 1.25rem; }
+    .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--neon); flex-shrink: 0; }
+    .status-dot.loading { background: var(--amber); animation: pulse 1s infinite; }
+    .status-dot.error   { background: var(--coral); }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+    /* ── Table ── */
+    .table-wrap { border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .table-head { display: grid; padding: 10px 20px; background: var(--bg-surface); border-bottom: 1px solid var(--border); font-size: 11px; font-weight: 500; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; gap: 12px; }
+    .prog-head  { grid-template-columns: 1fr 150px 110px 100px; }
+    .row        { display: grid; padding: 13px 20px; border-bottom: 1px solid var(--border); align-items: center; gap: 12px; transition: background 0.12s; }
+    .prog-row   { grid-template-columns: 1fr 150px 110px 100px; }
+    .row:last-child { border-bottom: none; }
+    .row:hover { background: var(--bg-hover); }
+    .row.dim { opacity: 0.45; }
+    .cell-name { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+    .program-name { font-size: 14px; font-weight: 500; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .row:hover .program-name { color: var(--neon); }
+    .offmenu-tag { display: inline-block; font-size: 10px; font-weight: 500; padding: 1px 7px; border-radius: 999px; background: var(--coral-dim); color: var(--coral); border: 1px solid rgba(248,113,113,0.2); width: fit-content; }
+    .type-pill { font-size: 11px; font-weight: 500; padding: 3px 10px; border-radius: 999px; display: inline-block; }
+    .tp-private  { background: var(--blue-dim);   color: var(--blue);   border: 1px solid rgba(96,165,250,0.2); }
+    .tp-group    { background: var(--purple-dim);  color: var(--purple); border: 1px solid rgba(167,139,250,0.2); }
+    .tp-parent   { background: var(--teal-dim);    color: var(--teal);   border: 1px solid rgba(52,211,153,0.2); }
+    .tp-workshop { background: var(--amber-dim);   color: var(--amber);  border: 1px solid rgba(251,191,36,0.2); }
+    .tp-other    { background: var(--bg-surface);  color: var(--text-muted); border: 1px solid var(--border); }
+    .status-badge { font-size: 11px; font-weight: 500; padding: 3px 10px; border-radius: 999px; display: inline-block; }
+    .s-active   { background: var(--neon-dim); color: var(--neon); border: 1px solid var(--neon-border); }
+    .s-inactive { background: var(--bg-surface); color: var(--text-muted); border: 1px solid var(--border); }
+    .link-btn { font-size: 11px; font-weight: 500; padding: 5px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: transparent; color: var(--neon); cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; transition: all 0.15s; white-space: nowrap; }
+    .link-btn:hover { background: var(--neon-dim); border-color: var(--neon); }
+    .no-link { font-size: 11px; color: var(--text-muted); font-style: italic; }
+    .empty-row { padding: 4rem 2rem; text-align: center; color: var(--text-muted); font-size: 14px; }
+
+    /* ── Invoice tab ── */
+    .invoice-wrap { display: flex; flex-direction: column; align-items: center; gap: 0; }
+    .invoice-info { width: 100%; max-width: 700px; background: var(--bg-card); border: 1px solid var(--border); border-bottom: none; border-radius: var(--radius-lg) var(--radius-lg) 0 0; padding: 1.25rem 1.5rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+    .invoice-label { font-size: 13px; font-weight: 500; color: var(--text-primary); }
+    .invoice-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+    .invoice-badge { font-size: 11px; font-weight: 500; padding: 4px 12px; border-radius: 999px; background: var(--neon-dim); color: var(--neon); border: 1px solid var(--neon-border); }
+    .form-frame-wrap { width: 100%; max-width: 700px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 0 0 var(--radius-lg) var(--radius-lg); overflow: hidden; }
+    .form-frame { width: 100%; height: 2553px; border: none; display: block; background: #fff; }
+
+    /* ── Leaderboard ── */
+    .lb-controls { display: flex; align-items: center; gap: 10px; margin-bottom: 1.5rem; flex-wrap: wrap; }
+    .month-select { font-size: 13px; font-family: var(--font); padding: 8px 14px; border-radius: var(--radius-md); border: 1px solid var(--border); background: var(--bg-card); color: var(--text-primary); outline: none; cursor: pointer; transition: border-color 0.2s; appearance: none; padding-right: 32px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' stroke='%23666' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; }
+    .month-select:focus { border-color: var(--neon); }
+    .lb-refresh { font-size: 12px; font-family: var(--font); padding: 7px 14px; border-radius: 999px; border: 1px solid var(--border); background: transparent; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; gap: 5px; transition: all 0.15s; }
+    .lb-refresh:hover { border-color: var(--neon-border); color: var(--neon); }
+    .update-btn { font-size: 13px; font-weight: 600; font-family: var(--font); padding: 8px 20px; border-radius: 999px; border: 1.5px solid var(--neon); background: var(--neon-dim); color: var(--neon); cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.15s; letter-spacing: 0.01em; }
+    .update-btn:hover { background: var(--neon); color: #0a0a0a; }
+    .update-btn.spinning .refresh-icon { display: inline-block; animation: spin 0.6s linear; }
+    @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+
+    /* Podium */
+    .podium { display: flex; align-items: flex-end; justify-content: center; gap: 12px; margin-bottom: 2rem; flex-wrap: wrap; }
+    .podium-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1rem; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 140px; flex: 1; max-width: 180px; transition: border-color 0.15s; }
+    .podium-card.rank-1 { border-color: var(--gold); background: linear-gradient(180deg, rgba(250,204,21,0.07) 0%, var(--bg-card) 100%); }
+    .podium-card.rank-2 { border-color: rgba(148,163,184,0.4); }
+    .podium-card.rank-3 { border-color: rgba(180,130,80,0.4); }
+    .podium-medal { font-size: 22px; }
+    .podium-name { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+    .podium-pts  { font-size: 24px; font-weight: 600; color: var(--neon); }
+    .podium-pts-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; }
+    .podium-tier { font-size: 11px; font-weight: 500; padding: 2px 9px; border-radius: 999px; margin-top: 2px; }
+    .tier-gold     { background: var(--gold-dim);   color: var(--gold);   border: 1px solid rgba(250,204,21,0.25); }
+    .tier-silver   { background: rgba(148,163,184,0.1); color: #94a3b8; border: 1px solid rgba(148,163,184,0.25); }
+    .tier-bronze   { background: rgba(180,130,80,0.1);  color: #b48250; border: 1px solid rgba(180,130,80,0.25); }
+    .tier-standard { background: var(--bg-surface); color: var(--text-muted); border: 1px solid var(--border); }
+
+    /* LB table */
+    .lb-table-wrap { border: 1px solid var(--border); border-radius: var(--radius-lg); overflow-x: auto; }
+    .lb-head { grid-template-columns: 44px 160px 90px 70px 70px 70px 70px 100px 110px; min-width: 850px; }
+    .lb-row  { grid-template-columns: 44px 160px 90px 70px 70px 70px 70px 100px 110px; min-width: 850px; }
+    .rank-num { font-size: 13px; font-weight: 600; color: var(--text-muted); text-align: center; }
+    .rank-num.top { color: var(--gold); }
+    .coach-name-cell { font-size: 13px; font-weight: 500; color: var(--text-primary); }
+    .pts-cell  { font-size: 13px; font-weight: 600; color: var(--neon); }
+    .num-cell  { font-size: 13px; color: var(--text-secondary); }
+    .bonus-cell { font-size: 13px; font-weight: 600; color: var(--teal); }
+    .gc-cell   { font-size: 12px; color: var(--amber); font-weight: 500; }
+
+    /* ── Footer ── */
+    .page-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem; flex-wrap: wrap; gap: 8px; }
+    .results-count { font-size: 12px; color: var(--text-muted); }
+    .sync-time { font-size: 11px; color: var(--text-muted); }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+<!-- Nav -->
+<div class="nav">
+  <div class="nav-brand">
+    <div class="brand-dot"></div>
+    <span class="brand-name">Hi-Lite Coach Portal</span>
+  </div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="switchTab('programs',this)"><span class="tab-icon">📋</span> Programs</button>
+    <button class="nav-tab" onclick="switchTab('invoice',this)"><span class="tab-icon">📝</span> Submit Invoice</button>
+    <button class="nav-tab" onclick="switchTab('leaderboard',this)"><span class="tab-icon">🏆</span> Leaderboard</button>
+  </div>
+</div>
+
+<div class="shell">
+
+  <!-- ═══════════════ PROGRAMS TAB ═══════════════ -->
+  <div class="tab-panel active" id="tab-programs">
+    <div class="page-header">
+      <div class="page-title">Programs Directory</div>
+      <div class="page-sub">All Hi-Lite programs, links, and statuses — updated live from the master sheet.</div>
+    </div>
+
+    <div class="controls">
+      <input class="search-box" type="text" id="progSearch" placeholder="Search programs…" oninput="renderPrograms()" />
+      <button class="filter-btn active" onclick="setProgStatus('all',this)">All</button>
+      <button class="filter-btn" onclick="setProgStatus('active',this)">Active</button>
+      <button class="filter-btn" onclick="setProgStatus('inactive',this)">Inactive</button>
+      <button class="refresh-btn" id="progRefreshBtn" onclick="fetchPrograms(true)"><span class="refresh-icon">↻</span> Refresh</button>
+    </div>
+
+    <div class="metrics" id="progMetrics"></div>
+    <div class="type-tabs" id="progTypeTabs"></div>
+
+    <div class="status-bar">
+      <div class="status-dot loading" id="progStatusDot"></div>
+      <span id="progStatusText">Loading…</span>
+    </div>
+
+    <div class="table-wrap">
+      <div class="table-head prog-head">
+        <div>Program</div><div>Type</div><div>Status</div><div>Link</div>
+      </div>
+      <div id="progGrid"></div>
+    </div>
+
+    <div class="page-footer">
+      <span class="results-count" id="progCount"></span>
+      <span class="sync-time" id="progFooter"></span>
+    </div>
+  </div>
+
+  <!-- ═══════════════ INVOICE TAB ═══════════════ -->
+  <div class="tab-panel" id="tab-invoice">
+    <div class="page-header">
+      <div class="page-title">Submit Invoice</div>
+      <div class="page-sub">Fill out the form below to submit your coaching invoice for the month.</div>
+    </div>
+
+    <div class="invoice-wrap">
+      <div class="invoice-info">
+        <div>
+          <div class="invoice-label">Coach Invoice Submission</div>
+          <div class="invoice-sub">Submissions are reviewed and processed by the 5th of each month.</div>
+        </div>
+        <span class="invoice-badge">Powered by Google Forms</span>
+      </div>
+      <div class="form-frame-wrap">
+        <iframe
+          class="form-frame"
+          id="invoiceFrame"
+          src="https://docs.google.com/forms/d/e/1FAIpQLSf9WI3ZN4QnTQLD2mI8DJXHhTo6f8bLOMVYRESbdcRtwUIjAQ/viewform?embedded=true"
+          width="100%"
+          height="2553"
+          frameborder="0"
+          marginheight="0"
+          marginwidth="0"
+          title="Hi-Lite Coach Invoice Submission">
+          Loading…
+        </iframe>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ LEADERBOARD TAB ═══════════════ -->
+  <div class="tab-panel" id="tab-leaderboard">
+    <div class="page-header">
+      <div class="page-title">Performance Leaderboard</div>
+      <div class="page-sub">Activity points and tier standings by month. Data pulls live from the submissions sheet.</div>
+    </div>
+
+    <div class="lb-controls">
+      <select class="month-select" id="monthSelect" onchange="renderLeaderboard()">
+        <option value="">Loading months…</option>
+      </select>
+      <button class="update-btn" id="lbRefreshBtn" onclick="fetchLeaderboard(true)">
+        <span class="refresh-icon">↻</span> Update Data
+      </button>
+      <span class="sync-time" id="lbFooter" style="margin-left:auto;"></span>
+    </div>
+
+    <div class="metrics" id="lbMetrics"></div>
+
+    <div class="status-bar">
+      <div class="status-dot loading" id="lbStatusDot"></div>
+      <span id="lbStatusText">Loading leaderboard…</span>
+    </div>
+
+    <!-- Podium -->
+    <div class="podium" id="lbPodium"></div>
+
+    <!-- Full table -->
+    <div class="lb-table-wrap">
+      <div class="table-head lb-head">
+        <div style="text-align:center;">#</div>
+        <div>Coach</div>
+        <div>Activity Pts</div>
+        <div>Privates</div>
+        <div>Groups</div>
+        <div>Referrals</div>
+        <div>Re-enroll</div>
+        <div>Revenue Bonus</div>
+        <div>Tier / GC</div>
+      </div>
+      <div id="lbGrid"></div>
+    </div>
+  </div>
+
+</div><!-- /shell -->
+
+<script>
+/* ══════════════════════════════════
+   SHARED
+══════════════════════════════════ */
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  btn.classList.add('active');
+}
+
+function splitLine(line) {
+  const res=[]; let cur=''; let q=false;
+  for(let i=0;i<line.length;i++){
+    const c=line[i];
+    if(c==='"'){q=!q;}else if(c===','&&!q){res.push(cur);cur='';}else cur+=c;
+  }
+  res.push(cur); return res;
+}
+function parseCSV(text) {
+  const lines=text.trim().split(/\r?\n/);
+  if(lines.length<2)return{headers:[],rows:[]};
+  const headers=splitLine(lines[0]).map(h=>h.trim());
+  const rows=lines.slice(1).map(line=>{
+    const vals=splitLine(line);
+    const obj={};
+    headers.forEach((h,i)=>obj[h]=(vals[i]||'').trim());
+    return obj;
+  }).filter(r=>Object.values(r).some(v=>v.trim&&v.trim()));
+  return{headers,rows};
+}
+function animateBtn(id) {
+  const btn=document.getElementById(id);
+  if(!btn)return;
+  btn.classList.add('spinning');
+  setTimeout(()=>btn.classList.remove('spinning'),600);
+}
+function setStatus(dotId, txtId, state, msg) {
+  const dot=document.getElementById(dotId);
+  if(dot) dot.className='status-dot'+(state==='loading'?' loading':state==='error'?' error':'');
+  const txt=document.getElementById(txtId);
+  if(txt) txt.textContent=msg;
+}
+function nowStr(){ return new Date().toLocaleString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'}); }
+
+/* ══════════════════════════════════
+   PROGRAMS
+══════════════════════════════════ */
+const PROG_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS1-uM1RJsiUY_Timor7wMm0H8RFPd8PzYo7Cakdz80MQ2TKpWoYCWWWMqisOjmv_QNtcdofGZ8Xe0-/pub?gid=0&single=true&output=csv";
+
+const PROG_FALLBACK = [
+  { name:"Hi-Lite New Coach Onboarding",       status:"Active",   link:"https://funnels.hilitecoaching.com/join",                        type:"Other",           offmenu:false },
+  { name:"Youth Client",                        status:"Active",   link:"https://funnels.hilitecoaching.com/welcome-to-youth-client",     type:"Private Coaching",offmenu:false },
+  { name:"Youth Membership",                    status:"Active",   link:"https://funnels.hilitecoaching.com/welcome-to-youth-membership", type:"Private Coaching",offmenu:false },
+  { name:"Youth Client (3mos Payment Plan)",    status:"Active",   link:"https://funnels.hilitecoaching.com/welcome-to-youth-client-plan",type:"Private Coaching",offmenu:false },
+  { name:"Youth Client (6 session)",            status:"Active",   link:"https://link.fastpaydirect.com/payment-link/6977bf080ded1e3e0a034b74",type:"Private Coaching",offmenu:true },
+  { name:"Adult Client",                        status:"Active",   link:"https://funnels.hilitecoaching.com/welcome-to-teen-client",      type:"Private Coaching",offmenu:false },
+  { name:"Adult Membership",                    status:"Active",   link:"https://funnels.hilitecoaching.com/welcome-to-adult-membership", type:"Private Coaching",offmenu:false },
+  { name:"Adult Client (6 session)",            status:"Active",   link:"https://funnels.hilitecoaching.com/adult-6session",              type:"Private Coaching",offmenu:true },
+  { name:"Adult Coaching 19 weeks",             status:"Active",   link:"https://funnels.hilitecoaching.com/adult-coaching-19",           type:"Private Coaching",offmenu:true },
+  { name:"Brain Flex Coaching",                 status:"Active",   link:"https://funnels.hilitecoaching.com/private-brain-flex",          type:"Private Coaching",offmenu:false },
+  { name:"Get Launched Career Prep",            status:"Active",   link:"https://funnels.hilitecoaching.com/get-launched",               type:"Private Coaching",offmenu:false },
+  { name:"EmpowHer Private",                    status:"Active",   link:"https://funnels.hilitecoaching.com/empowher-private",           type:"Private Coaching",offmenu:false },
+  { name:"Relentless 90",                       status:"Active",   link:"https://funnels.hilitecoaching.com/relentless-90",              type:"Private Coaching",offmenu:false },
+  { name:"The Work Private",                    status:"Active",   link:"https://funnels.hilitecoaching.com/the-work-onboarding",        type:"Private Coaching",offmenu:false },
+  { name:"Career Scoops",                       status:"Active",   link:"https://funnels.hilitecoaching.com/career-scoops",              type:"Private Coaching",offmenu:false },
+  { name:"Family Coaching",                     status:"Active",   link:"https://funnels.hilitecoaching.com/welcome-to-family-coaching", type:"Parent Coaching",  offmenu:false },
+  { name:"Empowered Families",                  status:"Active",   link:"https://funnels.hilitecoaching.com/parent-group-coaching",      type:"Parent Coaching",  offmenu:false },
+  { name:"Roper YMCA",                          status:"Active",   link:"https://funnels.hilitecoaching.com/welcome-ymca-roper",         type:"Group Coaching",   offmenu:false },
+  { name:"EmpowHer Group",                      status:"Active",   link:"https://funnels.hilitecoaching.com/empowher",                   type:"Group Coaching",   offmenu:false },
+  { name:"Relentless GROUP 90",                 status:"Active",   link:"https://funnels.hilitecoaching.com/relentless-90-group",        type:"Group Coaching",   offmenu:false },
+  { name:"Continuation Group",                  status:"Active",   link:"https://funnels.hilitecoaching.com/continuation-group",         type:"Group Coaching",   offmenu:false },
+  { name:"Young Founders Institute",            status:"Active",   link:"https://funnels.hilitecoaching.com/young-entrepreneurs",        type:"Group Coaching",   offmenu:false },
+  { name:"Brain Flex Group",                    status:"Active",   link:"https://funnels.hilitecoaching.com/brain-flex-by-hi-lite",      type:"Group Coaching",   offmenu:false },
+  { name:"The Work Group",                      status:"Inactive", link:"https://funnels.hilitecoaching.com/the-work-onboarding",        type:"Group Coaching",   offmenu:false },
+  { name:"What's Next: Life After Highschool",  status:"Active",   link:"https://funnels.hilitecoaching.com/college-prep",               type:"Workshops",        offmenu:false },
+  { name:"How Money Works",                     status:"Active",   link:"https://funnels.hilitecoaching.com/fin-lit",                    type:"Workshops",        offmenu:false },
+  { name:"HiLight Hangouts (Orlando)",          status:"Active",   link:"https://funnels.hilitecoaching.com/orlando-teen-social-group1", type:"Workshops",        offmenu:false },
+  { name:"Service Brochure (WIP)",              status:"Active",   link:"https://funnels.hilitecoaching.com/program",                    type:"Workshops",        offmenu:false },
+  { name:"Workshop Feedback",                   status:"Active",   link:"",                                                               type:"Workshops",        offmenu:false },
+];
+
+let programs=[], progStatusFilter='all', progTypeFilter='all';
+
+async function fetchPrograms(manual=false) {
+  if(manual) animateBtn('progRefreshBtn');
+  setStatus('progStatusDot','progStatusText','loading','Syncing with Google Sheets…');
+  try {
+    const res=await fetch(PROG_CSV+'&t='+Date.now());
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    const text=await res.text();
+    const {rows}=parseCSV(text);
+    const mapped=rows.map(r=>{
+      const get=(...keys)=>{for(const k of keys){const f=Object.keys(r).find(rk=>rk.toLowerCase().includes(k.toLowerCase()));if(f&&r[f])return r[f];}return'';};
+      const name=get('program name','name');
+      return{name,status:get('status')||'Active',link:get('signup link','link','url','landing'),type:get('type'),offmenu:name.toLowerCase().includes('off menu')};
+    }).filter(p=>p.name);
+    if(mapped.length){programs=mapped;setStatus('progStatusDot','progStatusText','ok','Live · synced from Google Sheets');document.getElementById('progFooter').textContent='Synced: '+nowStr();}
+    else throw new Error('Empty');
+  } catch(e) {
+    if(!programs.length)programs=PROG_FALLBACK;
+    setStatus('progStatusDot','progStatusText','ok','Built-in data · sheet unavailable');
+    document.getElementById('progFooter').textContent='Built-in data · '+new Date().toLocaleDateString();
+  }
+  renderPrograms();
+}
+
+function renderPrograms() {
+  renderProgMetrics();
+  renderProgTypeTabs();
+  const search=document.getElementById('progSearch').value.toLowerCase();
+  const filtered=programs.filter(p=>{
+    const st=p.status.toLowerCase();
+    return(progStatusFilter==='all'||st===progStatusFilter)&&
+           (progTypeFilter==='all'||p.type===progTypeFilter)&&
+           (p.name.toLowerCase().includes(search)||(p.type||'').toLowerCase().includes(search));
+  });
+  document.getElementById('progCount').textContent=filtered.length+' of '+programs.length+' programs';
+  const grid=document.getElementById('progGrid');
+  if(!filtered.length){grid.innerHTML='<div class="empty-row">No programs match your search or filter.</div>';return;}
+  const pc=t=>{const r=(t||'').toLowerCase();return r.includes('private')?'tp-private':r.includes('group')?'tp-group':r.includes('parent')?'tp-parent':r.includes('workshop')?'tp-workshop':'tp-other';};
+  grid.innerHTML=filtered.map(p=>{
+    const st=p.status.toLowerCase();
+    const link=p.link&&p.link.startsWith('http')?`<a class="link-btn" href="${p.link}" target="_blank" rel="noopener">Open ↗</a>`:`<span class="no-link">No link</span>`;
+    return`<div class="row prog-row${st==='inactive'?' dim':''}">
+      <div class="cell-name"><div class="program-name">${p.name}</div>${p.offmenu?'<span class="offmenu-tag">Off-menu</span>':''}</div>
+      <div><span class="type-pill ${pc(p.type)}">${p.type||'—'}</span></div>
+      <div><span class="status-badge ${st==='active'?'s-active':'s-inactive'}">${p.status}</span></div>
+      <div>${link}</div>
+    </div>`;
+  }).join('');
+}
+function renderProgMetrics() {
+  const t=programs.length,a=programs.filter(p=>p.status.toLowerCase()==='active').length,i=programs.filter(p=>p.status.toLowerCase()==='inactive').length;
+  document.getElementById('progMetrics').innerHTML=`
+    <div class="metric"><div class="metric-label">Total</div><div class="metric-value">${t}</div></div>
+    <div class="metric"><div class="metric-label">Active</div><div class="metric-value neon">${a}</div></div>
+    <div class="metric"><div class="metric-label">Inactive</div><div class="metric-value dim">${i}</div></div>`;
+}
+function renderProgTypeTabs() {
+  const types=['all',...new Set(programs.map(p=>p.type).filter(Boolean).sort())];
+  document.getElementById('progTypeTabs').innerHTML=types.map(t=>`<button class="type-tab${progTypeFilter===t?' active':''}" onclick="setProgType('${t}')">${t==='all'?'All types':t}</button>`).join('');
+}
+function setProgStatus(f,btn){progStatusFilter=f;document.querySelectorAll('#tab-programs .filter-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderPrograms();}
+function setProgType(f){progTypeFilter=f;renderPrograms();}
+
+/* ══════════════════════════════════
+   LEADERBOARD
+══════════════════════════════════ */
+const LB_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTZJLe9hozCKGWL8QBUTmzAdSd7BJugYTrGnH_8mfEd20MmXqlew8H4vbSDZjJaqlncAGAI5bjsaAtQ/pub?gid=1971616366&single=true&output=csv";
+
+// Fixed point values per activity — based on Hi-Lite Coach Incentive Guide 2026
+const POINT_MAP = {
+  'networking events attended for hi-lite':        10,
+  'approved social media posts':                    5,
+  'original content used by hi-lite':              15,
+  'community speaking engagements':                20,
+  'guests brought to hi-lite events':              10,
+  'google/facebook reviews left or shared':         5,
+  '5-star reviews that name you specifically':     25,
+};
+
+// Tier thresholds — everyone earns GC based on points
+function calcTier(pts) {
+  if (pts >= 150) return 'Platinum';
+  if (pts >= 100) return 'Gold';
+  if (pts >= 50)  return 'Silver';
+  if (pts >= 25)  return 'Bronze';
+  return '—';
+}
+
+// Assign ONE winner per tier — highest scorer in each threshold band wins the tier badge
+// Everyone else in that band shows their points but no tier badge
+function assignTierWinners(coaches) {
+  const tiers = ['Platinum','Gold','Silver','Bronze'];
+  const thresholds = { Platinum:150, Gold:100, Silver:50, Bronze:25 };
+  const winners = new Set();
+
+  // Sort descending by pts
+  const sorted = [...coaches].sort((a,b) => (b.activityPts||0) - (a.activityPts||0));
+
+  tiers.forEach(tier => {
+    const eligible = sorted.filter(c =>
+      calcTier(c.activityPts) === tier && !winners.has(c.coach)
+    );
+    if (eligible.length) {
+      eligible[0].tierBadge = tier; // only the top scorer in this band wins
+      winners.add(eligible[0].coach);
+    }
+  });
+
+  // Everyone else gets no badge but keeps their GC
+  coaches.forEach(c => {
+    if (!c.tierBadge) c.tierBadge = '—';
+  });
+
+  return coaches;
+}
+
+function tierClass(t) {
+  const tl = (t||'').toLowerCase();
+  if (tl === 'platinum') return 'tier-gold'; // reuse gold style for platinum
+  if (tl === 'gold')     return 'tier-gold';
+  if (tl === 'silver')   return 'tier-silver';
+  if (tl === 'bronze')   return 'tier-bronze';
+  return 'tier-standard';
+}
+
+// Calculate points from a raw form row using column headers
+function calcPoints(row, headers) {
+  let pts = 0;
+  for (const [activity, pointVal] of Object.entries(POINT_MAP)) {
+    // Find matching header (flexible match)
+    const col = headers.find(h => h.toLowerCase().trim().includes(activity));
+    if (col && row[col]) {
+      const count = parseFloat(row[col]) || 0;
+      pts += count * pointVal;
+    }
+  }
+  return pts;
+}
+
+// Raw form submissions (one row per submission)
+let rawSubmissions = [];
+
+// Aggregate: group by coach + month, sum everything
+function aggregateLeaderboard() {
+  const map = {};
+  for (const row of rawSubmissions) {
+    const coach = row._coach;
+    const month = row._month;
+    if (!coach || !month) continue;
+    const key = `${coach}||${month}`;
+    if (!map[key]) map[key] = { coach, month, pts:0, privates:0, groups:0, referrals:0, reenroll:0, revBonus:0 };
+    map[key].pts      += row._pts;
+    map[key].privates += row._privates;
+    map[key].groups   += row._groups;
+    map[key].referrals+= row._referrals;
+    map[key].reenroll += row._reenroll;
+    map[key].revBonus += row._revBonus;
+  }
+  const result = Object.values(map).map(r => ({
+    ...r,
+    activityPts: r.pts,
+    tier: calcTier(r.pts),
+    gc: gcValue(r.pts),
+    tierBadge: '—',
+  }));
+  return assignTierWinners(result);
+}
+
+function gcValue(pts) {
+  if (pts >= 150) return '$100 GC + Recognition';
+  if (pts >= 100) return '$100 GC';
+  if (pts >= 50)  return '$50 GC';
+  if (pts >= 25)  return '$25 GC';
+  return '—';
+}
+
+// Fallback — real data from sheet (used when live fetch is unavailable)
+const COACH_LIST = ["Amy Thomas","Jean Legere","Jeremy Ward","Sandra Cribben","Nancy Abramson","Catalina Osorio","Jeni Roop","Christina Love","Diana Tran","Tiffany Garber","Corey Vereen","Rivka Seeman","Christiane Sandim"];
+
+// Real submissions from form responses
+const RAW_FALLBACK = [
+  { _coach:"Amy Thomas",      _month:"March 2026", _pts:190, _privates:1, _groups:0, _referrals:0, _reenroll:0, _revBonus:100  },
+  { _coach:"Catalina Osorio", _month:"March 2026", _pts:260, _privates:1, _groups:1, _referrals:2, _reenroll:1, _revBonus:280  },
+  { _coach:"Amy Thomas",      _month:"April 2026", _pts:100, _privates:2, _groups:3, _referrals:3, _reenroll:0, _revBonus:470  },
+];
+
+// Coaches with no submissions yet get 0-row entries for the current months
+const ACTIVE_MONTHS = ["March 2026","April 2026"];
+const submittedKeys = new Set(RAW_FALLBACK.map(r=>`${r._coach}||${r._month}`));
+ACTIVE_MONTHS.forEach(month => {
+  COACH_LIST.forEach(coach => {
+    if (!submittedKeys.has(`${coach}||${month}`) && !RAW_FALLBACK.find(r=>r._coach===coach&&r._month===month)) {
+      RAW_FALLBACK.push({ _coach:coach, _month:month, _pts:0, _privates:0, _groups:0, _referrals:0, _reenroll:0, _revBonus:0 });
+    }
+  });
+});
+
+const LB_FALLBACK = (() => {
+  const map = {};
+  for (const row of RAW_FALLBACK) {
+    const key = `${row._coach}||${row._month}`;
+    if (!map[key]) map[key] = { coach:row._coach, month:row._month, pts:0, privates:0, groups:0, referrals:0, reenroll:0, revBonus:0 };
+    map[key].pts       += row._pts;
+    map[key].privates  += row._privates;
+    map[key].groups    += row._groups;
+    map[key].referrals += row._referrals;
+    map[key].reenroll  += row._reenroll;
+    map[key].revBonus  += row._revBonus;
+  }
+  const all = Object.values(map).map(r => ({
+    ...r, activityPts:r.pts, tier:calcTier(r.pts), gc:gcValue(r.pts), tierBadge:'—'
+  }));
+  // Assign winners per month
+  const months = [...new Set(all.map(r=>r.month))];
+  months.forEach(month => {
+    const group = all.filter(r=>r.month===month);
+    assignTierWinners(group);
+  });
+  return all;
+})();
+
+let lbData = [];
+
+async function fetchLeaderboard(manual=false) {
+  if (manual) animateBtn('lbRefreshBtn');
+  setStatus('lbStatusDot','lbStatusText','loading','Syncing leaderboard…');
+  try {
+    const res = await fetch(LB_CSV + '&t=' + Date.now());
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const text = await res.text();
+    const {headers, rows} = parseCSV(text);
+
+    // Map each raw row → enriched submission object
+    rawSubmissions = rows.map(row => {
+      const find = (...keys) => {
+        for (const k of keys) {
+          const col = headers.find(h => h.toLowerCase().includes(k.toLowerCase()));
+          if (col && row[col]) return row[col];
+        }
+        return '';
+      };
+      const findNum = (...keys) => parseFloat(find(...keys)) || 0;
+      const privates  = findNum('self-closed private');
+      const groups    = findNum('self-closed group');
+      const referrals = findNum('referrals closed by others');
+      const reenroll  = findNum('re-enrollments you drove');
+      const revBonus  = (privates * 100) + (groups * 50) + (referrals * 40) + (reenroll * 50);
+      return {
+        _coach:    find('coach name'),
+        _month:    find('submission month'),
+        _pts:      calcPoints(row, headers),
+        _privates: privates,
+        _groups:   groups,
+        _referrals:referrals,
+        _reenroll: reenroll,
+        _revBonus: revBonus,
+      };
+    }).filter(r => r._coach);
+
+    if (!rawSubmissions.length) throw new Error('No submissions');
+
+    lbData = aggregateLeaderboard();
+    setStatus('lbStatusDot','lbStatusText','ok','Live · calculated from form responses');
+    document.getElementById('lbFooter').textContent = 'Synced: ' + nowStr();
+
+  } catch(e) {
+    if (!lbData.length) lbData = LB_FALLBACK;
+    setStatus('lbStatusDot','lbStatusText','ok','Sample data · sheet unavailable');
+    document.getElementById('lbFooter').textContent = 'Sample data · ' + new Date().toLocaleDateString();
+  }
+  populateMonthDropdown();
+  renderLeaderboard();
+}
+
+function populateMonthDropdown() {
+  // Sort months newest first
+  const months = [...new Set(lbData.map(r => r.month).filter(Boolean))].sort((a,b) => {
+    const parse = s => { const d = new Date(s); return isNaN(d) ? 0 : d; };
+    return parse(b) - parse(a);
+  });
+  const sel = document.getElementById('monthSelect');
+  const current = sel.value;
+  sel.innerHTML = months.length
+    ? months.map(m => `<option value="${m}"${m===current?' selected':''}>${m}</option>`).join('')
+    : '<option value="">No data yet</option>';
+}
+
+function renderLeaderboard() {
+  const month = document.getElementById('monthSelect').value;
+
+  // Sort ascending by activity points
+  let filtered = lbData
+    .filter(r => !month || r.month === month)
+    .sort((a,b) => (a.activityPts||0) - (b.activityPts||0));
+
+  // Re-assign tier winners for this filtered month view
+  filtered = assignTierWinners(filtered.map(r => ({...r, tierBadge:'—'})));
+
+  // Metrics
+  const totalCoaches  = filtered.length;
+  const topPts        = filtered.length ? Math.max(...filtered.map(r => r.activityPts||0)) : 0;
+  const totalRevBonus = filtered.reduce((s,r) => s + (r.revBonus||0), 0);
+  const reachedBronze = filtered.filter(r => (r.activityPts||0) >= 25).length;
+  document.getElementById('lbMetrics').innerHTML = `
+    <div class="metric"><div class="metric-label">Coaches</div><div class="metric-value">${totalCoaches}</div></div>
+    <div class="metric"><div class="metric-label">Top Score</div><div class="metric-value neon">${topPts} pts</div></div>
+    <div class="metric"><div class="metric-label">Total Rev Bonuses</div><div class="metric-value" style="color:var(--teal)">$${totalRevBonus.toLocaleString()}</div></div>
+    <div class="metric"><div class="metric-label">Reached Bronze+</div><div class="metric-value">${reachedBronze}</div></div>`;
+
+  // Podium — top 3 by activity points
+  const top3 = [...filtered].sort((a,b) => (b.activityPts||0) - (a.activityPts||0)).slice(0,3);
+  const medals = ['🥇','🥈','🥉'];
+  const rankClasses = ['rank-1','rank-2','rank-3'];
+  document.getElementById('lbPodium').innerHTML = top3.length
+    ? top3.map((r,i) => `
+        <div class="podium-card ${rankClasses[i]||''}">
+          <div class="podium-medal">${medals[i]}</div>
+          <div class="podium-name">${r.coach}</div>
+          <div class="podium-pts">${r.activityPts||0}</div>
+          <div class="podium-pts-label">Activity pts</div>
+          ${r.tierBadge !== '—'
+            ? `<span class="podium-tier ${tierClass(r.tierBadge)}">🏅 ${r.tierBadge} Winner</span>`
+            : r.gc !== '—' ? `<span class="podium-tier tier-standard">${r.gc}</span>` : ''}
+          ${r.revBonus ? `<div style="font-size:12px;color:var(--teal);margin-top:2px;">+$${r.revBonus} bonus</div>` : ''}
+        </div>`).join('')
+    : '';
+
+  // Full table — ascending order
+  const grid = document.getElementById('lbGrid');
+  if (!filtered.length) { grid.innerHTML = '<div class="empty-row">No submissions for this month yet.</div>'; return; }
+
+  grid.innerHTML = filtered.map((r,i) => `
+    <div class="row lb-row">
+      <div class="rank-num">${i+1}</div>
+      <div class="coach-name-cell">${r.coach}</div>
+      <div class="pts-cell">${r.activityPts||0} pts</div>
+      <div class="num-cell">${r.privates||0}</div>
+      <div class="num-cell">${r.groups||0}</div>
+      <div class="num-cell">${r.referrals||0}</div>
+      <div class="num-cell">${r.reenroll||0}</div>
+      <div class="bonus-cell">${r.revBonus ? '$'+r.revBonus.toLocaleString() : '—'}</div>
+      <div>
+        ${r.tierBadge !== '—'
+          ? `<span class="podium-tier ${tierClass(r.tierBadge)}">🏅 ${r.tierBadge}</span>
+             <div style="font-size:11px;color:var(--amber);margin-top:3px;">${r.gc}</div>`
+          : r.gc !== '—'
+            ? `<div style="font-size:12px;color:var(--amber);">${r.gc}</div>`
+            : `<span style="color:var(--text-muted);font-size:12px;">—</span>`}
+      </div>
+    </div>`).join('');
+}
+
+/* ══════════════════════════════════
+   INIT
+══════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', function() {
+  // Programs — show fallback immediately, then try sheet
+  programs = PROG_FALLBACK;
+  renderPrograms();
+  setStatus('progStatusDot','progStatusText','ok','Showing built-in data · attempting sync…');
+  document.getElementById('progFooter').textContent='Built-in data · '+new Date().toLocaleDateString();
+  fetchPrograms();
+
+  // Leaderboard — show fallback immediately, then try sheet
+  lbData = LB_FALLBACK;
+  populateMonthDropdown();
+  renderLeaderboard();
+  setStatus('lbStatusDot','lbStatusText','ok','Showing sample data · attempting sync…');
+  fetchLeaderboard();
+
+  // Google Form is embedded directly in the iframe src above
+});
+</script>
+</body>
+</html>
