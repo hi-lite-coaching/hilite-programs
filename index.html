@@ -319,16 +319,16 @@ function splitLine(line) {
   res.push(cur); return res;
 }
 function parseCSV(text) {
-  const lines=text.trim().split(/\r?\n/);
-  if(lines.length<2)return{headers:[],rows:[]};
-  const headers=splitLine(lines[0]).map(h=>h.trim());
-  const rows=lines.slice(1).map(line=>{
-    const vals=splitLine(line);
-    const obj={};
-    headers.forEach((h,i)=>obj[h]=(vals[i]||'').trim());
+  const lines = text.trim().split(/\r?\n/);
+  if (lines.length < 2) return {headers:[], rows:[]};
+  const headers = splitLine(lines[0]).map(h => h.trim()); // trim all headers
+  const rows = lines.slice(1).map(line => {
+    const vals = splitLine(line);
+    const obj = {};
+    headers.forEach((h, i) => obj[h] = (vals[i] || '').trim()); // trim all values
     return obj;
-  }).filter(r=>Object.values(r).some(v=>v.trim&&v.trim()));
-  return{headers,rows};
+  }).filter(r => Object.values(r).some(v => v.trim && v.trim()));
+  return { headers, rows };
 }
 function animateBtn(id) {
   const btn=document.getElementById(id);
@@ -392,7 +392,7 @@ async function fetchPrograms(manual=false) {
     const text=await res.text();
     const {rows}=parseCSV(text);
     const mapped=rows.map(r=>{
-      const get=(...keys)=>{for(const k of keys){const f=Object.keys(r).find(rk=>rk.toLowerCase().includes(k.toLowerCase()));if(f&&r[f])return r[f];}return'';};
+      const get=(...keys)=>{for(const k of keys){const f=Object.keys(r).find(rk=>rk.trim().toLowerCase().includes(k.trim().toLowerCase()));if(f!==undefined&&r[f]!=='')return r[f].trim();}return'';};
       const name=get('program name','name');
       return{name,status:get('status')||'Active',link:get('signup link','link','url','landing'),type:get('type'),offmenu:name.toLowerCase().includes('off menu')};
     }).filter(p=>p.name);
@@ -511,9 +511,8 @@ function tierClass(t) {
 function calcPoints(row, headers) {
   let pts = 0;
   for (const [activity, pointVal] of Object.entries(POINT_MAP)) {
-    // Find matching header (flexible match)
-    const col = headers.find(h => h.toLowerCase().trim().includes(activity));
-    if (col && row[col]) {
+    const col = headers.find(h => h.trim().toLowerCase().includes(activity.trim().toLowerCase()));
+    if (col !== undefined && row[col] !== undefined && row[col] !== '') {
       const count = parseFloat(row[col]) || 0;
       pts += count * pointVal;
     }
@@ -618,8 +617,8 @@ async function fetchLeaderboard(manual=false) {
     rawSubmissions = rows.map(row => {
       const find = (...keys) => {
         for (const k of keys) {
-          const col = headers.find(h => h.toLowerCase().includes(k.toLowerCase()));
-          if (col && row[col]) return row[col];
+          const col = headers.find(h => h.trim().toLowerCase().includes(k.trim().toLowerCase()));
+          if (col !== undefined && row[col] !== undefined && row[col] !== '') return row[col].trim();
         }
         return '';
       };
