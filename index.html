@@ -89,9 +89,9 @@
     /* ── Table ── */
     .table-wrap { border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
     .table-head { display: grid; padding: 10px 20px; background: var(--bg-surface); border-bottom: 1px solid var(--border); font-size: 11px; font-weight: 500; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; gap: 12px; }
-    .prog-head  { grid-template-columns: 1fr 150px 110px 100px; }
+    .prog-head  { grid-template-columns: 1fr 150px 110px 160px; }
     .row        { display: grid; padding: 13px 20px; border-bottom: 1px solid var(--border); align-items: center; gap: 12px; transition: background 0.12s; }
-    .prog-row   { grid-template-columns: 1fr 150px 110px 100px; }
+    .prog-row   { grid-template-columns: 1fr 150px 110px 160px; }
     .row:last-child { border-bottom: none; }
     .row:hover { background: var(--bg-hover); }
     .row.dim { opacity: 0.45; }
@@ -110,6 +110,8 @@
     .s-inactive { background: var(--bg-surface); color: var(--text-muted); border: 1px solid var(--border); }
     .link-btn { font-size: 11px; font-weight: 500; padding: 5px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: transparent; color: var(--neon); cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; transition: all 0.15s; white-space: nowrap; }
     .link-btn:hover { background: var(--neon-dim); border-color: var(--neon); }
+    .copy-btn { font-size: 11px; font-weight: 500; font-family: var(--font); padding: 5px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: transparent; color: var(--text-secondary); cursor: pointer; display: inline-flex; align-items: center; gap: 4px; transition: all 0.15s; white-space: nowrap; }
+    .copy-btn:hover { background: var(--bg-surface); color: var(--text-primary); border-color: var(--border-md); }
     .no-link { font-size: 11px; color: var(--text-muted); font-style: italic; }
     .empty-row { padding: 4rem 2rem; text-align: center; color: var(--text-muted); font-size: 14px; }
 
@@ -503,6 +505,33 @@ async function fetchPrograms(manual=false) {
   renderPrograms();
 }
 
+function copyLink(url, btn) {
+  navigator.clipboard.writeText(url).then(() => {
+    const orig = btn.textContent;
+    btn.textContent = '✓ Copied!';
+    btn.style.color = 'var(--neon)';
+    btn.style.borderColor = 'var(--neon)';
+    setTimeout(() => {
+      btn.textContent = orig;
+      btn.style.color = '';
+      btn.style.borderColor = '';
+    }, 2000);
+  }).catch(() => {
+    // Fallback for older browsers
+    const ta = document.createElement('textarea');
+    ta.value = url;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    const orig = btn.textContent;
+    btn.textContent = '✓ Copied!';
+    setTimeout(() => { btn.textContent = orig; }, 2000);
+  });
+}
+
 function renderPrograms() {
   renderProgMetrics();
   renderProgTypeTabs();
@@ -519,12 +548,17 @@ function renderPrograms() {
   const pc=t=>{const r=(t||'').toLowerCase();return r.includes('private')?'tp-private':r.includes('group')?'tp-group':r.includes('parent')?'tp-parent':r.includes('workshop')?'tp-workshop':'tp-other';};
   grid.innerHTML=filtered.map(p=>{
     const st=p.status.toLowerCase();
-    const link=p.link&&p.link.startsWith('http')?`<a class="link-btn" href="${p.link}" target="_blank" rel="noopener">Open ↗</a>`:`<span class="no-link">No link</span>`;
+    const linkBtns = p.link && p.link.startsWith('http')
+      ? `<div style="display:flex;gap:6px;flex-wrap:wrap;">
+           <a class="link-btn" href="${p.link}" target="_blank" rel="noopener">Open ↗</a>
+           <button class="copy-btn" onclick="copyLink('${p.link}', this)">Copy link</button>
+         </div>`
+      : `<span class="no-link">No link</span>`;
     return`<div class="row prog-row${st==='inactive'?' dim':''}">
       <div class="cell-name"><div class="program-name">${p.name}</div>${p.offmenu?'<span class="offmenu-tag">Off-menu</span>':''}</div>
       <div><span class="type-pill ${pc(p.type)}">${p.type||'—'}</span></div>
       <div><span class="status-badge ${st==='active'?'s-active':'s-inactive'}">${p.status}</span></div>
-      <div>${link}</div>
+      <div>${linkBtns}</div>
     </div>`;
   }).join('');
 }
