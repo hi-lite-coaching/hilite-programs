@@ -672,10 +672,10 @@ function populateMonthDropdown() {
 function renderLeaderboard() {
   const month = document.getElementById('monthSelect').value;
 
-  // Sort ascending by activity points
+  // Sort descending by activity points — highest at top
   let filtered = lbData
     .filter(r => !month || r.month === month)
-    .sort((a,b) => (a.activityPts||0) - (b.activityPts||0));
+    .sort((a,b) => (b.activityPts||0) - (a.activityPts||0));
 
   // Re-assign tier winners for this filtered month view
   filtered = assignTierWinners(filtered.map(r => ({...r, tierBadge:'—'})));
