@@ -500,31 +500,14 @@ async function fetchPrograms(manual=false) {
     const lines=text.trim().split(/\r?\n/);
     if(lines.length<2)throw new Error('Empty');
 
-    // Parse headers — trim everything
-    const rawHeaders=splitLine(lines[0]).map(h=>h.trim());
-
-    // Find column index by keyword — returns -1 if not found
-    const col=(...keys)=>{
-      for(const k of keys){
-        const idx=rawHeaders.findIndex(h=>h.toLowerCase().includes(k.toLowerCase()));
-        if(idx!==-1)return idx;
-      }
-      return -1;
-    };
-
-    // Map column indices for the exact headers we know
-    const iName   = col('program name','name');
-    const iLink   = col('program signup link','signup link','landing page','link','url');
-    const iType   = col('type');
-    const iStatus = col('status');
-
+    // Confirmed column order in sheet:
+    // 0: Program Name | 1: Description | 2: Status | 3: Program Signup Link | 4: Type
     const mapped=lines.slice(1).map(line=>{
       const vals=splitLine(line).map(v=>v.trim());
-      if(!vals[iName])return null;
-      const name   = iName>=0   ? (vals[iName]||'')   : '';
-      const link   = iLink>=0   ? (vals[iLink]||'')   : '';
-      const type   = iType>=0   ? (vals[iType]||'')   : '';
-      const status = iStatus>=0 ? (vals[iStatus]||'Active') : 'Active';
+      const name   = vals[0]||'';
+      const status = vals[2]||'Active';
+      const link   = vals[3]||'';
+      const type   = vals[4]||'';
       if(!name)return null;
 
       const inferredType = type || (()=>{
