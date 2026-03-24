@@ -502,7 +502,7 @@ async function fetchPrograms(manual=false) {
 
     // Column order in sheet:
     // 0: Program Name | 1: Status | 2: Program Signup Link | 3: Type
-    const mapped=lines.slice(1).map(line=>{
+    const mapped=lines.slice(2).map(line=>{
       const vals=splitLine(line).map(v=>v.trim());
       const name   = vals[0]||'';
       const status = vals[1]||'Active';
