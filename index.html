@@ -497,11 +497,26 @@ async function fetchPrograms(manual=false) {
     const res=await fetch(PROG_CSV+'&t='+Date.now());
     if(!res.ok)throw new Error('HTTP '+res.status);
     const text=await res.text();
-    const {rows}=parseCSV(text);
+    const {headers, rows}=parseCSV(text);
     const mapped=rows.map(r=>{
-      const get=(...keys)=>{for(const k of keys){const f=Object.keys(r).find(rk=>rk.trim().toLowerCase().includes(k.trim().toLowerCase()));if(f!==undefined&&r[f]!=='')return r[f].trim();}return'';};
+      const get=(...keys)=>{for(const k of keys){const f=headers.find(h=>h.trim().toLowerCase().includes(k.trim().toLowerCase()));if(f!==undefined&&r[f]!=='')return r[f].trim();}return'';};
       const name=get('program name','name');
-      return{name,status:get('status')||'Active',link:get('signup link','link','url','landing'),type:get('type'),offmenu:name.toLowerCase().includes('off menu')};
+      // Match common variations of the link column name
+      const link=get('signup link','landing page','program link','link','url');
+      // Match common variations of the type column
+      const type=get('type');
+      // Match status
+      const status=get('status')||'Active';
+      // If type is still empty, try to infer from program name
+      const inferredType = type || (()=>{
+        const n = name.toLowerCase();
+        if(n.includes('group')||n.includes('ymca')||n.includes('hangout')||n.includes('founders')||n.includes('empowher group')||n.includes('relentless group')||n.includes('continuation')||n.includes('brain flex group')) return 'Group Coaching';
+        if(n.includes('family')||n.includes('empowered families')) return 'Parent Coaching';
+        if(n.includes('workshop')||n.includes('feedback')||n.includes('money works')||n.includes("what's next")||n.includes('life after')) return 'Workshops';
+        if(n.includes('onboarding')||n.includes('brochure')) return 'Other';
+        return 'Private Coaching';
+      })();
+      return{name,status,link,type:inferredType,offmenu:name.toLowerCase().includes('off menu')||name.toLowerCase().includes('off-menu')};
     }).filter(p=>p.name);
     if(mapped.length){programs=mapped;setStatus('progStatusDot','progStatusText','ok','Live · synced from Google Sheets');document.getElementById('progFooter').textContent='Synced: '+nowStr();}
     else throw new Error('Empty');
