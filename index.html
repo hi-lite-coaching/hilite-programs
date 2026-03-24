@@ -500,9 +500,11 @@ async function fetchPrograms(manual=false) {
     const lines=text.trim().split(/\r?\n/);
     if(lines.length<2)throw new Error('Empty');
 
-    // Column order in sheet:
-    // 0: Program Name | 1: Status | 2: Program Signup Link | 3: Type
-    const mapped=lines.slice(2).map(line=>{
+    // Only keep rows where col B is exactly "Active" or "Inactive" — skips all header rows
+    const mapped=lines.filter(line=>{
+      const v=splitLine(line).map(s=>s.trim());
+      return v[1]==='Active'||v[1]==='Inactive';
+    }).map(line=>{
       const vals=splitLine(line).map(v=>v.trim());
       const name   = vals[0]||'';
       const status = vals[1]||'Active';
