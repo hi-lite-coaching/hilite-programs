@@ -500,14 +500,14 @@ async function fetchPrograms(manual=false) {
     const lines=text.trim().split(/\r?\n/);
     if(lines.length<2)throw new Error('Empty');
 
-    // Confirmed column order in sheet:
-    // 0: Program Name | 1: Description | 2: Status | 3: Program Signup Link | 4: Type
+    // Column order in sheet:
+    // 0: Program Name | 1: Status | 2: Program Signup Link | 3: Type
     const mapped=lines.slice(1).map(line=>{
       const vals=splitLine(line).map(v=>v.trim());
       const name   = vals[0]||'';
-      const status = vals[2]||'Active';
-      const link   = vals[3]||'';
-      const type   = vals[4]||'';
+      const status = vals[1]||'Active';
+      const link   = vals[2]||'';
+      const type   = vals[3]||'';
       if(!name)return null;
 
       const inferredType = type || (()=>{
