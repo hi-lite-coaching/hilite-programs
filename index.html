@@ -619,16 +619,17 @@ const ADMIN_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR1bCvICZf5gb
 async function fetchCoachRoster() {
   try {
     const res = await fetch(ADMIN_CSV + '&t=' + Date.now());
-    if (!res.ok) return COACH_LIST;
+    if (!res.ok) throw new Error('not ok');
     const text = await res.text();
-    const lines = text.trim().split(/\r?\n/);
-    // First column of each data row should be coach name
-    const names = lines.slice(1).map(line => {
-      const vals = splitLine(line).map(v => v.trim());
-      return vals[0] || '';
-    }).filter(n => n && n.length > 1 && !n.toLowerCase().includes('name') && !n.toLowerCase().includes('coach'));
-    return names.length ? names : COACH_LIST;
+    const lines = text.trim().split(/?
+/);
+    const names = lines.slice(1)
+      .map(line => splitLine(line)[0].trim())
+      .filter(n => n && n.length > 1 && n.toLowerCase() !== 'coaches');
+    console.log('Roster from sheet:', names);
+    return names.length >= COACH_LIST.length ? names : COACH_LIST;
   } catch(e) {
+    console.log('Roster fallback to hardcoded list');
     return COACH_LIST;
   }
 }
@@ -642,6 +643,10 @@ const POINT_MAP = {
   'guests brought to hi-lite events':              10,
   'google/facebook reviews left or shared':         5,
   '5-star reviews that name you specifically':     25,
+  'self-closed private programs':                  30,
+  'self-closed group programs':                    20,
+  'referrals closed by others':                    15,
+  're-enrollments you drove':                      20,
 };
 
 // Tier thresholds — everyone earns GC based on points
@@ -741,25 +746,13 @@ function gcValue(pts) {
 }
 
 // Fallback — real data from sheet (used when live fetch is unavailable)
-const COACH_LIST = ["Amy Thomas","Jean Legere","Jeremy Ward","Sandra Cribben","Nancy Abramson","Catalina Osorio","Jeni Roop","Christina Love","Diana Tran","Tiffany Garber","Corey Vereen","Rivka Seeman","Christiane Sandim"];
+const COACH_LIST = ["Amy Thomas","Jean Legere","Jeremy Ward","Sandra Cribben","Nancy Abramson","Catalina Osorio","Jeni Roop","Diana Tran","Tiffany Garber","Corey Vereen","Rivka Seeman","Christiane Sandim"];
+// ^ Keep this in sync with Admin tab. It's used as guaranteed fallback.
 
-// Real submissions from form responses
-const RAW_FALLBACK = [
-  { _coach:"Amy Thomas",      _month:"March 2026", _pts:190, _privates:1, _groups:0, _referrals:0, _reenroll:0, _revBonus:100  },
-  { _coach:"Catalina Osorio", _month:"March 2026", _pts:260, _privates:1, _groups:1, _referrals:2, _reenroll:1, _revBonus:280  },
-  { _coach:"Amy Thomas",      _month:"April 2026", _pts:100, _privates:2, _groups:3, _referrals:3, _reenroll:0, _revBonus:470  },
-];
-
-// Coaches with no submissions yet get 0-row entries for the current months
-const ACTIVE_MONTHS = ["March 2026","April 2026"];
-const submittedKeys = new Set(RAW_FALLBACK.map(r=>`${r._coach}||${r._month}`));
-ACTIVE_MONTHS.forEach(month => {
-  COACH_LIST.forEach(coach => {
-    if (!submittedKeys.has(`${coach}||${month}`) && !RAW_FALLBACK.find(r=>r._coach===coach&&r._month===month)) {
-      RAW_FALLBACK.push({ _coach:coach, _month:month, _pts:0, _privates:0, _groups:0, _referrals:0, _reenroll:0, _revBonus:0 });
-    }
-  });
-});
+// Fallback: all coaches at zero for March 2026 only
+const RAW_FALLBACK = COACH_LIST.map(coach => (
+  { _coach:coach, _month:"March 2026", _pts:0, _privates:0, _groups:0, _referrals:0, _reenroll:0, _revBonus:0 }
+));
 
 const LB_FALLBACK = (() => {
   const map = {};
@@ -796,24 +789,51 @@ async function fetchLeaderboard(manual=false) {
     const text = await res.text();
     const {headers, rows} = parseCSV(text);
 
+    // Find exact column headers (case-insensitive, trimmed)
+    const findHeader = (...keys) => {
+      for (const k of keys) {
+        const col = headers.find(h => h.trim().toLowerCase() === k.toLowerCase());
+        if (col !== undefined) return col;
+      }
+      // fallback: partial match
+      for (const k of keys) {
+        const col = headers.find(h => h.trim().toLowerCase().includes(k.toLowerCase()));
+        if (col !== undefined) return col;
+      }
+      return null;
+    };
+
+    const coachCol    = findHeader('Coach Name');
+    const monthCol    = findHeader('Submission Month');
+    const privateCol  = findHeader('Self-closed Private Programs');
+    const groupCol    = findHeader('Self-closed group programs');
+    const referralCol = findHeader('Referrals closed by others');
+    const reenrollCol = findHeader('Re-enrollments you drove');
+
+    console.log('Headers found:', { coachCol, monthCol, privateCol, groupCol, referralCol, reenrollCol });
+
     // Map each raw row → enriched submission object
     rawSubmissions = rows.map(row => {
-      const find = (...keys) => {
-        for (const k of keys) {
-          const col = headers.find(h => h.trim().toLowerCase().includes(k.trim().toLowerCase()));
-          if (col !== undefined && row[col] !== undefined && row[col] !== '') return row[col].trim();
-        }
-        return '';
-      };
-      const findNum = (...keys) => parseFloat(find(...keys)) || 0;
-      const privates  = findNum('self-closed private');
-      const groups    = findNum('self-closed group');
-      const referrals = findNum('referrals closed by others');
-      const reenroll  = findNum('re-enrollments you drove');
+      const get = col => col && row[col] ? row[col].trim() : '';
+      const getNum = col => parseFloat(get(col)) || 0;
+
+      const coachName = get(coachCol);
+      const month     = get(monthCol);
+
+      // Skip rows with no valid coach name or month
+      if (!coachName || !month) return null;
+      // Skip if coach name looks like a timestamp
+      if (/^\d{1,2}\/\d{1,2}\/\d{4}/.test(coachName)) return null;
+
+      const privates  = getNum(privateCol);
+      const groups    = getNum(groupCol);
+      const referrals = getNum(referralCol);
+      const reenroll  = getNum(reenrollCol);
       const revBonus  = (privates * 100) + (groups * 50) + (referrals * 40) + (reenroll * 50);
+
       return {
-        _coach:    find('coach name'),
-        _month:    find('submission month'),
+        _coach:    coachName,
+        _month:    month,
         _pts:      calcPoints(row, headers),
         _privates: privates,
         _groups:   groups,
@@ -821,29 +841,36 @@ async function fetchLeaderboard(manual=false) {
         _reenroll: reenroll,
         _revBonus: revBonus,
       };
-    }).filter(r => r._coach);
+    }).filter(Boolean);
 
-    if (!rawSubmissions.length) throw new Error('No submissions');
+    if (!rawSubmissions.length) throw new Error('No valid submissions found');
 
-    // Fetch coach roster and pad zeros for coaches with no submissions this month
+    // Fetch coach roster from Admin tab, fall back to hardcoded COACH_LIST
     const roster = await fetchCoachRoster();
+    console.log('Coach roster:', roster);
     const months = [...new Set(rawSubmissions.map(r => r._month).filter(Boolean))];
+    // Also ensure current month is always represented
+    if (!months.length) months.push('March 2026');
     months.forEach(month => {
       roster.forEach(coach => {
-        if (!rawSubmissions.find(r => r._coach === coach && r._month === month)) {
-          rawSubmissions.push({ _coach:coach, _month:month, _pts:0, _privates:0, _groups:0, _referrals:0, _reenroll:0, _revBonus:0 });
+        const exists = rawSubmissions.find(r =>
+          r._coach.trim().toLowerCase() === coach.trim().toLowerCase() && r._month === month
+        );
+        if (!exists) {
+          rawSubmissions.push({ _coach:coach.trim(), _month:month, _pts:0, _privates:0, _groups:0, _referrals:0, _reenroll:0, _revBonus:0 });
         }
       });
     });
 
     lbData = aggregateLeaderboard();
-    setStatus('lbStatusDot','lbStatusText','ok','Live · calculated from form responses');
+    setStatus('lbStatusDot','lbStatusText','ok','Live · ' + rawSubmissions.filter(r=>r._pts>0||r._privates>0).length + ' submissions loaded · ' + nowStr());
     document.getElementById('lbFooter').textContent = 'Synced: ' + nowStr();
 
   } catch(e) {
     if (!lbData.length) lbData = LB_FALLBACK;
-    setStatus('lbStatusDot','lbStatusText','ok','Sample data · sheet unavailable');
-    document.getElementById('lbFooter').textContent = 'Sample data · ' + new Date().toLocaleDateString();
+    setStatus('lbStatusDot','lbStatusText','error','⚠ ' + e.message + ' · showing fallback data');
+    document.getElementById('lbFooter').textContent = 'Error: ' + e.message;
+    console.error('Leaderboard fetch error:', e);
   }
   populateMonthDropdown();
   renderLeaderboard();
