@@ -500,6 +500,8 @@ async function fetchPrograms(manual=false) {
     const lines=text.trim().split(/\r?\n/);
     if(lines.length<2)throw new Error('Empty');
 
+    // Confirmed column order in sheet:
+    // 0: Program Name | 1: Description | 2: Status | 3: Program Signup Link | 4: Type
     // Only keep rows where col B is exactly "Active" or "Inactive" — skips all header rows
     const mapped=lines.filter(line=>{
       const v=splitLine(line).map(s=>s.trim());
@@ -612,6 +614,24 @@ function setProgType(f){progTypeFilter=f;renderPrograms();}
    LEADERBOARD
 ══════════════════════════════════ */
 const LB_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR1bCvICZf5gb4ayTDZB1p-zZ_5Z2E6lrfYUHWEaubeMNOPTEOa8UYiaAsdSCgf39lvGGJ1loBNHDdX/pub?gid=840789803&single=true&output=csv";
+const ADMIN_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR1bCvICZf5gb4ayTDZB1p-zZ_5Z2E6lrfYUHWEaubeMNOPTEOa8UYiaAsdSCgf39lvGGJ1loBNHDdX/pub?output=csv";
+
+async function fetchCoachRoster() {
+  try {
+    const res = await fetch(ADMIN_CSV + '&t=' + Date.now());
+    if (!res.ok) return COACH_LIST;
+    const text = await res.text();
+    const lines = text.trim().split(/\r?\n/);
+    // First column of each data row should be coach name
+    const names = lines.slice(1).map(line => {
+      const vals = splitLine(line).map(v => v.trim());
+      return vals[0] || '';
+    }).filter(n => n && n.length > 1 && !n.toLowerCase().includes('name') && !n.toLowerCase().includes('coach'));
+    return names.length ? names : COACH_LIST;
+  } catch(e) {
+    return COACH_LIST;
+  }
+}
 
 // Fixed point values per activity — based on Hi-Lite Coach Incentive Guide 2026
 const POINT_MAP = {
@@ -804,6 +824,17 @@ async function fetchLeaderboard(manual=false) {
     }).filter(r => r._coach);
 
     if (!rawSubmissions.length) throw new Error('No submissions');
+
+    // Fetch coach roster and pad zeros for coaches with no submissions this month
+    const roster = await fetchCoachRoster();
+    const months = [...new Set(rawSubmissions.map(r => r._month).filter(Boolean))];
+    months.forEach(month => {
+      roster.forEach(coach => {
+        if (!rawSubmissions.find(r => r._coach === coach && r._month === month)) {
+          rawSubmissions.push({ _coach:coach, _month:month, _pts:0, _privates:0, _groups:0, _referrals:0, _reenroll:0, _revBonus:0 });
+        }
+      });
+    });
 
     lbData = aggregateLeaderboard();
     setStatus('lbStatusDot','lbStatusText','ok','Live · calculated from form responses');
