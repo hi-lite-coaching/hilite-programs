@@ -616,23 +616,6 @@ function setProgType(f){progTypeFilter=f;renderPrograms();}
 const LB_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR1bCvICZf5gb4ayTDZB1p-zZ_5Z2E6lrfYUHWEaubeMNOPTEOa8UYiaAsdSCgf39lvGGJ1loBNHDdX/pub?gid=840789803&single=true&output=csv";
 const ADMIN_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR1bCvICZf5gb4ayTDZB1p-zZ_5Z2E6lrfYUHWEaubeMNOPTEOa8UYiaAsdSCgf39lvGGJ1loBNHDdX/pub?output=csv";
 
-async function fetchCoachRoster() {
-  try {
-    const res = await fetch(ADMIN_CSV + '&t=' + Date.now());
-    if (!res.ok) throw new Error('not ok');
-    const text = await res.text();
-    const lines = text.trim().split(/?
-/);
-    const names = lines.slice(1)
-      .map(line => splitLine(line)[0].trim())
-      .filter(n => n && n.length > 1 && n.toLowerCase() !== 'coaches');
-    console.log('Roster from sheet:', names);
-    return names.length >= COACH_LIST.length ? names : COACH_LIST;
-  } catch(e) {
-    console.log('Roster fallback to hardcoded list');
-    return COACH_LIST;
-  }
-}
 
 // Fixed point values per activity — based on Hi-Lite Coach Incentive Guide 2026
 const POINT_MAP = {
@@ -747,6 +730,32 @@ function gcValue(pts) {
 
 // Fallback — real data from sheet (used when live fetch is unavailable)
 const COACH_LIST = ["Amy Thomas","Jean Legere","Jeremy Ward","Sandra Cribben","Nancy Abramson","Catalina Osorio","Jeni Roop","Diana Tran","Tiffany Garber","Corey Vereen","Rivka Seeman","Christiane Sandim"];
+
+async function fetchCoachRoster() {
+  try {
+    const res = await fetch(ADMIN_CSV + '&t=' + Date.now());
+    if (!res.ok) throw new Error('not ok');
+    const text = await res.text();
+    const lines = text.trim().split(/\r?\n/);
+    const names = lines.slice(1)
+      .map(line => splitLine(line)[0].trim().replace(/^"+|"+$/g, '')) // strip quotes
+      .filter(n => {
+        if (!n || n.length < 2) return false;
+        if (/^\d/.test(n)) return false;               // skip timestamps / numbers
+        if (n.toLowerCase() === 'coaches') return false; // skip header
+        if (n.toLowerCase() === 'coach name') return false;
+        if (n.toLowerCase() === 'name') return false;
+        if (n.includes('/') || n.includes(':')) return false; // skip date/time strings
+        return true;
+      });
+    console.log('Roster from sheet:', names);
+    // Only use sheet roster if we got a reasonable number of names
+    return names.length >= 3 ? names : COACH_LIST;
+  } catch(e) {
+    console.log('Roster fallback to hardcoded list:', e.message);
+    return COACH_LIST;
+  }
+}
 // ^ Keep this in sync with Admin tab. It's used as guaranteed fallback.
 
 // Fallback: all coaches at zero for March 2026 only
@@ -845,12 +854,16 @@ async function fetchLeaderboard(manual=false) {
 
     if (!rawSubmissions.length) throw new Error('No valid submissions found');
 
-    // Fetch coach roster from Admin tab, fall back to hardcoded COACH_LIST
+    // Fetch coach roster — hardcoded list is always guaranteed baseline
     const roster = await fetchCoachRoster();
     console.log('Coach roster:', roster);
+
+    // Always ensure current month + all known months have all coaches
     const months = [...new Set(rawSubmissions.map(r => r._month).filter(Boolean))];
-    // Also ensure current month is always represented
+    const currentMonth = new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' });
+    if (!months.includes(currentMonth)) months.push(currentMonth);
     if (!months.length) months.push('March 2026');
+
     months.forEach(month => {
       roster.forEach(coach => {
         const exists = rawSubmissions.find(r =>
